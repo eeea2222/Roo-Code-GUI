@@ -96,6 +96,11 @@
 				"icon": "$(cloud)"
 			},
 			{
+				"command": "roo-cline.editorButtonClicked",
+				"title": "%command.editor.title%",
+				"icon": "$(files)"
+			},
+			{
 				"command": "roo-cline.settingsButtonClicked",
 				"title": "%command.settings.title%",
 				"icon": "$(settings-gear)"
@@ -229,8 +234,13 @@
 					"when": "view == roo-cline.SidebarProvider"
 				},
 				{
-					"command": "roo-cline.marketplaceButtonClicked",
+					"command": "roo-cline.editorButtonClicked",
 					"group": "navigation@4",
+					"when": "view == roo-cline.SidebarProvider"
+				},
+				{
+					"command": "roo-cline.marketplaceButtonClicked",
+					"group": "navigation@5",
 					"when": "view == roo-cline.SidebarProvider"
 				},
 				{
@@ -261,8 +271,13 @@
 					"when": "activeWebviewPanelId == roo-cline.TabPanelProvider"
 				},
 				{
-					"command": "roo-cline.marketplaceButtonClicked",
+					"command": "roo-cline.editorButtonClicked",
 					"group": "navigation@4",
+					"when": "activeWebviewPanelId == roo-cline.TabPanelProvider"
+				},
+				{
+					"command": "roo-cline.marketplaceButtonClicked",
+					"group": "navigation@5",
 					"when": "activeWebviewPanelId == roo-cline.TabPanelProvider"
 				},
 				{

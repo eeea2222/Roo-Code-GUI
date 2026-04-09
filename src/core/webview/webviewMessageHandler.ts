@@ -103,6 +103,8 @@ export const webviewMessageHandler = async (
 		return provider.getCurrentTask()?.cwd || provider.cwd
 	}
 
+	const normalizePathSeparators = (input: string) => input.split(path.sep).join("/")
+
 	const getCurrentMode = async (): Promise<string> => {
 		const currentTask = provider.getCurrentTask()
 
@@ -1242,6 +1244,88 @@ export const webviewMessageHandler = async (
 			}
 			openFile(filePath, message.values as { create?: boolean; content?: string; line?: number })
 			break
+		case "listDirectory": {
+			const requestedPath = (message.text || "").trim()
+			try {
+				const cwd = getCurrentCwd()
+				if (!cwd) {
+					await provider.postMessageToWebview({
+						type: "directoryListing",
+						values: { path: requestedPath, entries: [], error: "No workspace path available" },
+					})
+					break
+				}
+
+				const workspaceRootRealPath = await fs.realpath(cwd).catch(() => cwd)
+				const resolvedPath = path.resolve(cwd, requestedPath || ".")
+				let resolvedPathStats
+				try {
+					resolvedPathStats = await fs.stat(resolvedPath)
+				} catch (error) {
+					if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+						await provider.postMessageToWebview({
+							type: "directoryListing",
+							values: { path: requestedPath, entries: [], error: "Path does not exist" },
+						})
+						break
+					}
+					throw error
+				}
+
+				const targetRealPath = await fs.realpath(resolvedPath)
+
+				if (isPathOutsideWorkspace(targetRealPath)) {
+					await provider.postMessageToWebview({
+						type: "directoryListing",
+						values: { path: requestedPath, entries: [], error: "Path is outside workspace" },
+					})
+					break
+				}
+
+				if (!resolvedPathStats.isDirectory()) {
+					await provider.postMessageToWebview({
+						type: "directoryListing",
+						values: { path: requestedPath, entries: [], error: "Path is not a directory" },
+					})
+					break
+				}
+
+				const entries = await fs.readdir(targetRealPath, { withFileTypes: true })
+				const normalizedRelativePath = normalizePathSeparators(path.relative(workspaceRootRealPath, targetRealPath))
+
+				const listing = entries
+					.filter((entry) => entry.isDirectory() || entry.isFile())
+					.map((entry) => {
+						const entryPath = normalizePathSeparators(path.join(normalizedRelativePath, entry.name))
+						return {
+							name: entry.name,
+							path: entryPath,
+							type: entry.isDirectory() ? "folder" : "file",
+						}
+					})
+					.sort((a, b) => {
+						if (a.type === b.type) {
+							return a.name.localeCompare(b.name)
+						}
+						return a.type === "folder" ? -1 : 1
+					})
+
+				await provider.postMessageToWebview({
+					type: "directoryListing",
+					values: {
+						path: normalizedRelativePath,
+						entries: listing,
+					},
+				})
+			} catch (err) {
+				const errorMsg = err instanceof Error ? err.message : String(err)
+				await provider.postMessageToWebview({
+					type: "directoryListing",
+					values: { path: requestedPath, entries: [], error: errorMsg },
+				})
+			}
+			break
+		}
 		case "readFileContent": {
 			const relPath = message.text || ""
 			if (!relPath) {
@@ -1276,6 +1360,83 @@ export const webviewMessageHandler = async (
 				provider.postMessageToWebview({
 					type: "fileContent",
 					fileContent: { path: relPath, content: null, error: errorMsg },
+				})
+			}
+			break
+		}
+		case "saveFileContent": {
+			const relPath = message.text || ""
+			const contentToSave = typeof message.values?.content === "string" ? message.values.content : undefined
+
+			if (!relPath) {
+				await provider.postMessageToWebview({
+					type: "fileSaveResult",
+					values: { path: "", success: false, error: "No path provided" },
+				})
+				break
+			}
+
+			if (contentToSave === undefined) {
+				await provider.postMessageToWebview({
+					type: "fileSaveResult",
+					values: { path: normalizePathSeparators(relPath), success: false, error: "No file content provided" },
+				})
+				break
+			}
+
+			try {
+				const cwd = getCurrentCwd()
+				if (!cwd) {
+					await provider.postMessageToWebview({
+						type: "fileSaveResult",
+						values: { path: normalizePathSeparators(relPath), success: false, error: "No workspace path available" },
+					})
+					break
+				}
+
+				const absPath = path.resolve(cwd, relPath)
+				let fileStat
+				try {
+					fileStat = await fs.stat(absPath)
+				} catch (error) {
+					if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+						await provider.postMessageToWebview({
+							type: "fileSaveResult",
+							values: { path: normalizePathSeparators(relPath), success: false, error: "Path does not exist" },
+						})
+						break
+					}
+					throw error
+				}
+
+				if (!fileStat.isFile()) {
+					await provider.postMessageToWebview({
+						type: "fileSaveResult",
+						values: { path: normalizePathSeparators(relPath), success: false, error: "Path is not a file" },
+					})
+					break
+				}
+
+				const realPath = await fs.realpath(absPath)
+
+				if (isPathOutsideWorkspace(realPath)) {
+					await provider.postMessageToWebview({
+						type: "fileSaveResult",
+						values: { path: normalizePathSeparators(relPath), success: false, error: "Path is outside workspace" },
+					})
+					break
+				}
+
+				await fs.writeFile(realPath, contentToSave, "utf-8")
+				await provider.postMessageToWebview({
+					type: "fileSaveResult",
+					values: { path: normalizePathSeparators(relPath), success: true },
+				})
+			} catch (err) {
+				const errorMsg = err instanceof Error ? err.message : String(err)
+				await provider.postMessageToWebview({
+					type: "fileSaveResult",
+					values: { path: normalizePathSeparators(relPath), success: false, error: errorMsg },
 				})
 			}
 			break

@@ -88,6 +88,19 @@ vi.mock("@src/components/cloud/CloudView", () => ({
 	},
 }))
 
+vi.mock("@src/components/editor/WorkspaceEditorView", () => ({
+	__esModule: true,
+	default: function WorkspaceEditorView({ onDone }: { onDone: () => void }) {
+		return (
+			<div data-testid="editor-view">
+				<button data-testid="editor-done" onClick={onDone}>
+					Back to Chat
+				</button>
+			</div>
+		)
+	},
+}))
+
 const mockUseExtensionState = vi.fn()
 
 // Mock i18next and react-i18next
@@ -289,5 +302,19 @@ describe("App", () => {
 		const chatView = screen.getByTestId("chat-view")
 		expect(chatView.getAttribute("data-hidden")).toBe("false")
 		expect(screen.queryByTestId("marketplace-view")).not.toBeInTheDocument()
+	})
+
+	it("switches to editor view when receiving editorButtonClicked action", async () => {
+		render(<AppWithProviders />)
+
+		act(() => {
+			triggerMessage("editorButtonClicked")
+		})
+
+		const editorView = await screen.findByTestId("editor-view")
+		expect(editorView).toBeInTheDocument()
+
+		const chatView = screen.getByTestId("chat-view")
+		expect(chatView.getAttribute("data-hidden")).toBe("true")
 	})
 })

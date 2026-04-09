@@ -10,6 +10,7 @@
 	"command.marketplace.title": "Marketplace",
 	"command.openInEditor.title": "Open in Editor",
 	"command.cloud.title": "Cloud",
+	"command.editor.title": "Workspace Editor",
 	"command.settings.title": "Settings",
 	"command.documentation.title": "Documentation",
 	"command.openInNewTab.title": "Open In New Tab",
