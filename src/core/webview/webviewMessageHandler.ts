@@ -1371,7 +1371,7 @@ export const webviewMessageHandler = async (
 			if (!relPath) {
 				await provider.postMessageToWebview({
 					type: "fileSaveResult",
-					values: { path: relPath, success: false, error: "No path provided" },
+					values: { path: normalizeRelativePath(relPath), success: false, error: "No path provided" },
 				})
 				break
 			}
