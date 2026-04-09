@@ -43,33 +43,38 @@ export class StandaloneExtensionHost extends EventEmitter {
 		;(global as Record<string, unknown>).__extensionHost = this
 
 		const originalResolve = Module._resolveFilename
-		// This mirrors the existing CLI host strategy and ensures any extension import of
-		// "vscode" resolves to the shim during standalone runtime activation.
-		Module._resolveFilename = function (request: string, parent: unknown, isMain: boolean, options: unknown) {
-			if (request === "vscode") {
-				return "vscode-mock"
-			}
-			return originalResolve.call(this, request, parent, isMain, options)
-		}
-
-		require.cache["vscode-mock"] = {
-			id: "vscode-mock",
-			filename: "vscode-mock",
-			loaded: true,
-			exports: this.vscode,
-			children: [],
-			paths: [],
-			path: "",
-			isPreloading: false,
-			parent: null,
-			require,
-		} as unknown as NodeJS.Module
+		let resolverPatched = false
 
 		try {
+			// This mirrors the existing CLI host strategy and ensures any extension import of
+			// "vscode" resolves to the shim during standalone runtime activation.
+			Module._resolveFilename = function (request: string, parent: unknown, isMain: boolean, options: unknown) {
+				if (request === "vscode") {
+					return "vscode-mock"
+				}
+				return originalResolve.call(this, request, parent, isMain, options)
+			}
+			resolverPatched = true
+
+			require.cache["vscode-mock"] = {
+				id: "vscode-mock",
+				filename: "vscode-mock",
+				loaded: true,
+				exports: this.vscode,
+				children: [],
+				paths: [],
+				path: "",
+				isPreloading: false,
+				parent: null,
+				require,
+			} as unknown as NodeJS.Module
+
 			this.extensionModule = require(bundlePath) as ExtensionModule
 			await this.extensionModule.activate(this.vscode.context)
 		} finally {
-			Module._resolveFilename = originalResolve
+			if (resolverPatched) {
+				Module._resolveFilename = originalResolve
+			}
 		}
 	}
 
