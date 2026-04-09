@@ -1,0 +1,27 @@
+{
+	"name": "@roo-code/standalone",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"lint": "eslint src --ext .ts --max-warnings=0",
+		"check-types": "tsc --noEmit",
+		"test": "vitest run",
+		"dev": "tsx src/server.ts",
+		"build": "tsc -p tsconfig.build.json",
+		"start": "node dist/server.js",
+		"clean": "rimraf dist .turbo"
+	},
+	"dependencies": {
+		"@roo-code/types": "workspace:^",
+		"@roo-code/vscode-shim": "workspace:^"
+	},
+	"devDependencies": {
+		"@roo-code/config-eslint": "workspace:^",
+		"@roo-code/config-typescript": "workspace:^",
+		"@types/node": "^24.1.0",
+		"rimraf": "^6.0.1",
+		"tsx": "^4.19.3",
+		"vitest": "^3.2.3"
+	}
+}

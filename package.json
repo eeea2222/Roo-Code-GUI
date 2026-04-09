@@ -16,6 +16,8 @@
 		"build": "turbo build --log-order grouped --output-logs new-only",
 		"bundle": "turbo bundle --log-order grouped --output-logs new-only",
 		"bundle:nightly": "turbo bundle:nightly --log-order grouped --output-logs new-only",
+		"standalone:build": "pnpm --filter roo-cline bundle && pnpm --filter @roo-code/vscode-webview build && pnpm --filter @roo-code/standalone build",
+		"standalone:dev": "pnpm standalone:build && pnpm --filter @roo-code/standalone start",
 		"vsix": "turbo vsix --log-order grouped --output-logs new-only",
 		"vsix:nightly": "turbo vsix:nightly --log-order grouped --output-logs new-only",
 		"clean": "turbo clean --log-order grouped --output-logs new-only && rimraf dist out bin .vite-port .turbo",

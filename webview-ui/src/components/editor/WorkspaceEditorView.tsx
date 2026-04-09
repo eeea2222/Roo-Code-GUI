@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { ChevronLeft, FileText, Folder, RefreshCw, Save } from "lucide-react"
+import MonacoEditor from "@monaco-editor/react"
 
 import type { ExtensionMessage } from "@roo-code/types"
 
@@ -18,6 +19,59 @@ interface DirectoryEntry {
 }
 
 const normalizePath = (input: string) => input.replace(/\\/g, "/")
+
+export const inferMonacoLanguageFromPath = (filePath: string | null): string => {
+	if (!filePath) {
+		return "plaintext"
+	}
+
+	const ext = filePath.split(".").pop()?.toLowerCase()
+
+	switch (ext) {
+		case "ts":
+		case "tsx":
+			return "typescript"
+		case "js":
+		case "jsx":
+		case "mjs":
+		case "cjs":
+			return "javascript"
+		case "json":
+			return "json"
+		case "py":
+			return "python"
+		case "go":
+			return "go"
+		case "java":
+			return "java"
+		case "rb":
+			return "ruby"
+		case "rs":
+			return "rust"
+		case "php":
+			return "php"
+		case "css":
+			return "css"
+		case "scss":
+			return "scss"
+		case "html":
+		case "htm":
+			return "html"
+		case "md":
+			return "markdown"
+		case "yaml":
+		case "yml":
+			return "yaml"
+		case "xml":
+			return "xml"
+		case "sh":
+		case "bash":
+		case "zsh":
+			return "shell"
+		default:
+			return "plaintext"
+	}
+}
 
 export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 	const { cwd } = useExtensionState()
@@ -67,68 +121,75 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 		vscode.postMessage({ type: "openFile", text: selectedFilePath })
 	}, [selectedFilePath])
 
-	const handleMessage = useCallback((e: MessageEvent) => {
-		const message = e.data as ExtensionMessage
+	const handleMessage = useCallback(
+		(e: MessageEvent) => {
+			const message = e.data as ExtensionMessage
 
-		if (message.type === "directoryListing") {
-			const payload = message.values as
-				| {
-						path?: string
-						entries?: DirectoryEntry[]
-						error?: string
-				  }
-				| undefined
+			if (message.type === "directoryListing") {
+				const payload = message.values as
+					| {
+							path?: string
+							entries?: DirectoryEntry[]
+							error?: string
+					  }
+					| undefined
 
-			setIsDirectoryLoading(false)
-			setDirectoryError(payload?.error ?? null)
+				setIsDirectoryLoading(false)
+				setDirectoryError(payload?.error ?? null)
 
-			if (typeof payload?.path === "string" && Array.isArray(payload?.entries)) {
-				setCurrentDir(normalizePath(payload.path))
+				if (typeof payload?.path === "string" && Array.isArray(payload?.entries)) {
+					setCurrentDir(normalizePath(payload.path))
+				}
+
+				if (Array.isArray(payload?.entries)) {
+					setDirectoryEntries(payload.entries)
+				} else if (!payload?.error) {
+					setDirectoryEntries([])
+				}
 			}
 
-			if (Array.isArray(payload?.entries)) {
-				setDirectoryEntries(payload.entries)
-			} else if (!payload?.error) {
-				setDirectoryEntries([])
-			}
-		}
+			if (message.type === "fileContent" && message.fileContent) {
+				const { path, content, error } = message.fileContent
+				const normalizedPath = normalizePath(path)
+				if (!selectedFilePath || normalizedPath !== normalizePath(selectedFilePath)) {
+					return
+				}
 
-		if (message.type === "fileContent" && message.fileContent) {
-			const { path, content, error } = message.fileContent
-			const normalizedPath = normalizePath(path)
-			if (!selectedFilePath || normalizedPath !== normalizePath(selectedFilePath)) {
-				return
-			}
+				setIsFileLoading(false)
 
-			setIsFileLoading(false)
+				if (error) {
+					setFileError(error)
+					return
+				}
 
-			if (error) {
-				setFileError(error)
-				return
-			}
-
-			const resolvedContent = content ?? ""
-			setOriginalFileContent(resolvedContent)
-			setEditedFileContent(resolvedContent)
-			setFileError(null)
-		}
-
-		if (message.type === "fileSaveResult") {
-			const payload = message.values as { path?: string; success?: boolean; error?: string } | undefined
-			if (!payload?.path || !selectedFilePath || normalizePath(payload.path) !== normalizePath(selectedFilePath)) {
-				return
-			}
-
-			if (payload.success) {
-				setOriginalFileContent(editedFileContent)
-				setSaveStatus("Saved")
+				const resolvedContent = content ?? ""
+				setOriginalFileContent(resolvedContent)
+				setEditedFileContent(resolvedContent)
 				setFileError(null)
-			} else {
-				setSaveStatus(null)
-				setFileError(payload.error || "Failed to save file")
 			}
-		}
-	}, [editedFileContent, selectedFilePath])
+
+			if (message.type === "fileSaveResult") {
+				const payload = message.values as { path?: string; success?: boolean; error?: string } | undefined
+				if (
+					!payload?.path ||
+					!selectedFilePath ||
+					normalizePath(payload.path) !== normalizePath(selectedFilePath)
+				) {
+					return
+				}
+
+				if (payload.success) {
+					setOriginalFileContent(editedFileContent)
+					setSaveStatus("Saved")
+					setFileError(null)
+				} else {
+					setSaveStatus(null)
+					setFileError(payload.error || "Failed to save file")
+				}
+			}
+		},
+		[editedFileContent, selectedFilePath],
+	)
 
 	useEffect(() => {
 		window.addEventListener("message", handleMessage)
@@ -158,7 +219,11 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 						Workspace: {cwd || "No workspace"}
 					</div>
 				</div>
-				<Button variant="secondary" size="sm" onClick={() => loadDirectory(currentDir)} disabled={isDirectoryLoading}>
+				<Button
+					variant="secondary"
+					size="sm"
+					onClick={() => loadDirectory(currentDir)}
+					disabled={isDirectoryLoading}>
 					<RefreshCw className="size-4 mr-1" />
 					Refresh
 				</Button>
@@ -174,14 +239,18 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 							<button
 								className="w-full text-left px-2 py-1 rounded hover:bg-vscode-list-hoverBackground text-sm"
 								onClick={() => {
-									const parent = currentDir.includes("/") ? currentDir.slice(0, currentDir.lastIndexOf("/")) : ""
+									const parent = currentDir.includes("/")
+										? currentDir.slice(0, currentDir.lastIndexOf("/"))
+										: ""
 									loadDirectory(parent)
 								}}>
 								.. (Parent)
 							</button>
 						)}
 						{isDirectoryLoading ? (
-							<div className="px-2 py-1 text-sm text-vscode-descriptionForeground">Loading folders and files...</div>
+							<div className="px-2 py-1 text-sm text-vscode-descriptionForeground">
+								Loading folders and files...
+							</div>
 						) : directoryError ? (
 							<div className="px-2 py-1 text-sm text-vscode-errorForeground">{directoryError}</div>
 						) : (
@@ -189,7 +258,9 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 								<button
 									key={`${entry.type}:${entry.path}`}
 									className="w-full text-left px-2 py-1 rounded hover:bg-vscode-list-hoverBackground text-sm flex items-center gap-2"
-									onClick={() => (entry.type === "folder" ? loadDirectory(entry.path) : loadFile(entry.path))}>
+									onClick={() =>
+										entry.type === "folder" ? loadDirectory(entry.path) : loadFile(entry.path)
+									}>
 									{entry.type === "folder" ? (
 										<Folder className="size-4 shrink-0 text-vscode-charts-blue" />
 									) : (
@@ -206,7 +277,9 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 					<div className="px-3 py-2 border-b border-vscode-panel-border flex items-center justify-between gap-2">
 						<div className="text-sm truncate">{selectedFilePath || "Select a file to edit"}</div>
 						<div className="flex items-center gap-2">
-							{saveStatus && <span className="text-xs text-vscode-descriptionForeground">{saveStatus}</span>}
+							{saveStatus && (
+								<span className="text-xs text-vscode-descriptionForeground">{saveStatus}</span>
+							)}
 							<Button variant="ghost" size="sm" disabled={!selectedFilePath} onClick={openInVsCode}>
 								Open in VS Code
 							</Button>
@@ -218,13 +291,24 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 					</div>
 					{fileError && <div className="px-3 py-2 text-sm text-vscode-errorForeground">{fileError}</div>}
 					<div className="grow min-h-0 p-3">
-						<textarea
-							className="w-full h-full resize-none bg-vscode-input-background text-vscode-input-foreground border border-vscode-input-border rounded px-3 py-2 text-sm font-mono outline-none focus:border-vscode-focusBorder"
-							value={editedFileContent}
-							onChange={(e) => setEditedFileContent(e.target.value)}
-							placeholder={selectedFilePath ? "Edit file content..." : "Choose a file from the left panel."}
-							disabled={!selectedFilePath || isFileLoading}
-						/>
+						<div className="w-full h-full border border-vscode-input-border rounded overflow-hidden">
+							<MonacoEditor
+								height="100%"
+								defaultLanguage="plaintext"
+								language={inferMonacoLanguageFromPath(selectedFilePath)}
+								value={editedFileContent}
+								onChange={(value) => setEditedFileContent(value ?? "")}
+								theme="vs-dark"
+								options={{
+									readOnly: !selectedFilePath || isFileLoading,
+									minimap: { enabled: false },
+									fontSize: 13,
+									wordWrap: "on",
+									automaticLayout: true,
+									scrollBeyondLastLine: false,
+								}}
+							/>
+						</div>
 					</div>
 				</div>
 			</div>
