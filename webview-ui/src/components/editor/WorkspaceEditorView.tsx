@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useEvent } from "react-use"
 import { ChevronLeft, FileText, Folder, RefreshCw, Save } from "lucide-react"
 
 import type { ExtensionMessage } from "@roo-code/types"
@@ -68,7 +67,7 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 		vscode.postMessage({ type: "openFile", text: selectedFilePath })
 	}, [selectedFilePath])
 
-	useEvent("message", (e: MessageEvent) => {
+	const handleMessage = useCallback((e: MessageEvent) => {
 		const message = e.data as ExtensionMessage
 
 		if (message.type === "directoryListing") {
@@ -129,7 +128,14 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 				setFileError(payload.error || "Failed to save file")
 			}
 		}
-	})
+	}, [editedFileContent, selectedFilePath])
+
+	useEffect(() => {
+		window.addEventListener("message", handleMessage)
+		return () => {
+			window.removeEventListener("message", handleMessage)
+		}
+	}, [handleMessage])
 
 	useEffect(() => {
 		loadDirectory("")

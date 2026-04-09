@@ -103,7 +103,7 @@ export const webviewMessageHandler = async (
 		return provider.getCurrentTask()?.cwd || provider.cwd
 	}
 
-	const normalizeRelativePath = (input: string) => input.split(path.sep).join("/")
+	const normalizePathSeparators = (input: string) => input.split(path.sep).join("/")
 
 	const getCurrentMode = async (): Promise<string> => {
 		const currentTask = provider.getCurrentTask()
@@ -1291,12 +1291,12 @@ export const webviewMessageHandler = async (
 				}
 
 				const entries = await fs.readdir(targetRealPath, { withFileTypes: true })
-				const normalizedRelativePath = normalizeRelativePath(path.relative(workspaceRootRealPath, targetRealPath))
+				const normalizedRelativePath = normalizePathSeparators(path.relative(workspaceRootRealPath, targetRealPath))
 
 				const listing = entries
 					.filter((entry) => entry.isDirectory() || entry.isFile())
 					.map((entry) => {
-						const entryPath = normalizeRelativePath(path.join(normalizedRelativePath, entry.name))
+						const entryPath = normalizePathSeparators(path.join(normalizedRelativePath, entry.name))
 						return {
 							name: entry.name,
 							path: entryPath,
@@ -1371,7 +1371,7 @@ export const webviewMessageHandler = async (
 			if (!relPath) {
 				await provider.postMessageToWebview({
 					type: "fileSaveResult",
-					values: { path: normalizeRelativePath(relPath), success: false, error: "No path provided" },
+					values: { path: "", success: false, error: "No path provided" },
 				})
 				break
 			}
@@ -1379,7 +1379,7 @@ export const webviewMessageHandler = async (
 			if (contentToSave === undefined) {
 				await provider.postMessageToWebview({
 					type: "fileSaveResult",
-					values: { path: normalizeRelativePath(relPath), success: false, error: "No file content provided" },
+					values: { path: normalizePathSeparators(relPath), success: false, error: "No file content provided" },
 				})
 				break
 			}
@@ -1389,7 +1389,7 @@ export const webviewMessageHandler = async (
 				if (!cwd) {
 					await provider.postMessageToWebview({
 						type: "fileSaveResult",
-						values: { path: normalizeRelativePath(relPath), success: false, error: "No workspace path available" },
+						values: { path: normalizePathSeparators(relPath), success: false, error: "No workspace path available" },
 					})
 					break
 				}
@@ -1402,7 +1402,7 @@ export const webviewMessageHandler = async (
 					if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
 						await provider.postMessageToWebview({
 							type: "fileSaveResult",
-							values: { path: normalizeRelativePath(relPath), success: false, error: "Path does not exist" },
+							values: { path: normalizePathSeparators(relPath), success: false, error: "Path does not exist" },
 						})
 						break
 					}
@@ -1412,7 +1412,7 @@ export const webviewMessageHandler = async (
 				if (!fileStat.isFile()) {
 					await provider.postMessageToWebview({
 						type: "fileSaveResult",
-						values: { path: normalizeRelativePath(relPath), success: false, error: "Path is not a file" },
+						values: { path: normalizePathSeparators(relPath), success: false, error: "Path is not a file" },
 					})
 					break
 				}
@@ -1422,7 +1422,7 @@ export const webviewMessageHandler = async (
 				if (isPathOutsideWorkspace(realPath)) {
 					await provider.postMessageToWebview({
 						type: "fileSaveResult",
-						values: { path: normalizeRelativePath(relPath), success: false, error: "Path is outside workspace" },
+						values: { path: normalizePathSeparators(relPath), success: false, error: "Path is outside workspace" },
 					})
 					break
 				}
@@ -1430,13 +1430,13 @@ export const webviewMessageHandler = async (
 				await fs.writeFile(realPath, contentToSave, "utf-8")
 				await provider.postMessageToWebview({
 					type: "fileSaveResult",
-					values: { path: normalizeRelativePath(relPath), success: true },
+					values: { path: normalizePathSeparators(relPath), success: true },
 				})
 			} catch (err) {
 				const errorMsg = err instanceof Error ? err.message : String(err)
 				await provider.postMessageToWebview({
 					type: "fileSaveResult",
-					values: { path: normalizeRelativePath(relPath), success: false, error: errorMsg },
+					values: { path: normalizePathSeparators(relPath), success: false, error: errorMsg },
 				})
 			}
 			break
