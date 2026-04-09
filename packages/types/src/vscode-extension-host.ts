@@ -104,6 +104,8 @@ export interface ExtensionMessage {
 		| "folderSelected"
 		| "skills"
 		| "fileContent"
+		| "directoryListing"
+		| "fileSaveResult"
 	text?: string
 	/** For fileContent: { path, content, error? } */
 	fileContent?: { path: string; content: string | null; error?: string }
@@ -118,6 +120,7 @@ export interface ExtensionMessage {
 		| "historyButtonClicked"
 		| "marketplaceButtonClicked"
 		| "cloudButtonClicked"
+		| "editorButtonClicked"
 		| "didBecomeVisible"
 		| "focusInput"
 		| "switchTab"
@@ -448,6 +451,8 @@ export interface WebviewMessage {
 		| "saveImage"
 		| "openFile"
 		| "readFileContent"
+		| "listDirectory"
+		| "saveFileContent"
 		| "openMention"
 		| "cancelTask"
 		| "cancelAutoApproval"
@@ -584,7 +589,7 @@ export interface WebviewMessage {
 	text?: string
 	taskId?: string
 	editedMessageContent?: string
-	tab?: "settings" | "history" | "mcp" | "modes" | "chat" | "marketplace" | "cloud"
+	tab?: "settings" | "history" | "mcp" | "modes" | "chat" | "marketplace" | "cloud" | "editor"
 	disabled?: boolean
 	context?: string
 	dataUri?: string
