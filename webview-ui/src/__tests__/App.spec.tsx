@@ -92,8 +92,10 @@ vi.mock("@src/components/editor/WorkspaceEditorView", () => ({
 	__esModule: true,
 	default: function WorkspaceEditorView({ onDone }: { onDone: () => void }) {
 		return (
-			<div data-testid="editor-view" onClick={onDone}>
-				Editor View
+			<div data-testid="editor-view">
+				<button data-testid="editor-done" onClick={onDone}>
+					Back to Chat
+				</button>
 			</div>
 		)
 	},

@@ -1291,12 +1291,12 @@ export const webviewMessageHandler = async (
 				}
 
 				const entries = await fs.readdir(targetRealPath, { withFileTypes: true })
-				const normalizedDirPath = normalizeRelativePath(path.relative(workspaceRootRealPath, targetRealPath))
+				const normalizedRelativePath = normalizeRelativePath(path.relative(workspaceRootRealPath, targetRealPath))
 
 				const listing = entries
 					.filter((entry) => entry.isDirectory() || entry.isFile())
 					.map((entry) => {
-						const entryPath = normalizeRelativePath(path.join(normalizedDirPath, entry.name))
+						const entryPath = normalizeRelativePath(path.join(normalizedRelativePath, entry.name))
 						return {
 							name: entry.name,
 							path: entryPath,
@@ -1311,12 +1311,12 @@ export const webviewMessageHandler = async (
 					})
 
 				await provider.postMessageToWebview({
-					type: "directoryListing",
-					values: {
-						path: normalizedDirPath,
-						entries: listing,
-					},
-				})
+						type: "directoryListing",
+						values: {
+							path: normalizedRelativePath,
+							entries: listing,
+						},
+					})
 			} catch (err) {
 				const errorMsg = err instanceof Error ? err.message : String(err)
 				await provider.postMessageToWebview({
@@ -1376,20 +1376,20 @@ export const webviewMessageHandler = async (
 				break
 			}
 
-			if (contentToSave === undefined) {
-				await provider.postMessageToWebview({
-					type: "fileSaveResult",
-					values: { path: relPath, success: false, error: "No file content provided" },
-				})
-				break
-			}
+				if (contentToSave === undefined) {
+					await provider.postMessageToWebview({
+						type: "fileSaveResult",
+						values: { path: normalizeRelativePath(relPath), success: false, error: "No file content provided" },
+					})
+					break
+				}
 
 			try {
 				const cwd = getCurrentCwd()
 				if (!cwd) {
 					await provider.postMessageToWebview({
 						type: "fileSaveResult",
-						values: { path: relPath, success: false, error: "No workspace path available" },
+						values: { path: normalizeRelativePath(relPath), success: false, error: "No workspace path available" },
 					})
 					break
 				}
@@ -1412,7 +1412,7 @@ export const webviewMessageHandler = async (
 				if (!fileStat.isFile()) {
 					await provider.postMessageToWebview({
 						type: "fileSaveResult",
-						values: { path: relPath, success: false, error: "Path is not a file" },
+						values: { path: normalizeRelativePath(relPath), success: false, error: "Path is not a file" },
 					})
 					break
 				}
@@ -1422,7 +1422,7 @@ export const webviewMessageHandler = async (
 				if (isPathOutsideWorkspace(realPath)) {
 					await provider.postMessageToWebview({
 						type: "fileSaveResult",
-						values: { path: relPath, success: false, error: "Path is outside workspace" },
+						values: { path: normalizeRelativePath(relPath), success: false, error: "Path is outside workspace" },
 					})
 					break
 				}
