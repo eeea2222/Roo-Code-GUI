@@ -1258,6 +1258,20 @@ export const webviewMessageHandler = async (
 
 				const workspaceRootRealPath = await fs.realpath(cwd).catch(() => cwd)
 				const resolvedPath = path.resolve(cwd, requestedPath || ".")
+				let resolvedPathStats
+				try {
+					resolvedPathStats = await fs.stat(resolvedPath)
+				} catch (error) {
+					if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+						await provider.postMessageToWebview({
+							type: "directoryListing",
+							values: { path: requestedPath, entries: [], error: "Path does not exist" },
+						})
+						break
+					}
+					throw error
+				}
+
 				const targetRealPath = await fs.realpath(resolvedPath)
 
 				if (isPathOutsideWorkspace(targetRealPath)) {
@@ -1268,8 +1282,7 @@ export const webviewMessageHandler = async (
 					break
 				}
 
-				const stats = await fs.stat(targetRealPath)
-				if (!stats.isDirectory()) {
+				if (!resolvedPathStats.isDirectory()) {
 					await provider.postMessageToWebview({
 						type: "directoryListing",
 						values: { path: requestedPath, entries: [], error: "Path is not a directory" },
@@ -1382,21 +1395,34 @@ export const webviewMessageHandler = async (
 				}
 
 				const absPath = path.resolve(cwd, relPath)
+				let fileStat
+				try {
+					fileStat = await fs.stat(absPath)
+				} catch (error) {
+					if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+						await provider.postMessageToWebview({
+							type: "fileSaveResult",
+							values: { path: normalizeRelativePath(relPath), success: false, error: "Path does not exist" },
+						})
+						break
+					}
+					throw error
+				}
+
+				if (!fileStat.isFile()) {
+					await provider.postMessageToWebview({
+						type: "fileSaveResult",
+						values: { path: relPath, success: false, error: "Path is not a file" },
+					})
+					break
+				}
+
 				const realPath = await fs.realpath(absPath)
 
 				if (isPathOutsideWorkspace(realPath)) {
 					await provider.postMessageToWebview({
 						type: "fileSaveResult",
 						values: { path: relPath, success: false, error: "Path is outside workspace" },
-					})
-					break
-				}
-
-				const fileStat = await fs.stat(realPath)
-				if (!fileStat.isFile()) {
-					await provider.postMessageToWebview({
-						type: "fileSaveResult",
-						values: { path: relPath, success: false, error: "Path is not a file" },
 					})
 					break
 				}

@@ -83,13 +83,13 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 			setIsDirectoryLoading(false)
 			setDirectoryError(payload?.error ?? null)
 
-			if (typeof payload?.path === "string") {
+			if (typeof payload?.path === "string" && Array.isArray(payload?.entries)) {
 				setCurrentDir(normalizePath(payload.path))
 			}
 
 			if (Array.isArray(payload?.entries)) {
 				setDirectoryEntries(payload.entries)
-			} else {
+			} else if (!payload?.error) {
 				setDirectoryEntries([])
 			}
 		}
