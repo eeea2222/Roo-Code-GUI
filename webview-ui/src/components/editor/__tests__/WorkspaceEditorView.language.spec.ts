@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest"
 
-import { inferLanguage } from "../WorkspaceEditorView"
+import { inferMonacoLanguageFromPath } from "../WorkspaceEditorView"
 
-describe("WorkspaceEditorView inferLanguage", () => {
+describe("WorkspaceEditorView inferMonacoLanguageFromPath", () => {
 	it("maps common file extensions to Monaco languages", () => {
-		expect(inferLanguage("index.ts")).toBe("typescript")
-		expect(inferLanguage("index.tsx")).toBe("typescript")
-		expect(inferLanguage("app.js")).toBe("javascript")
-		expect(inferLanguage("file.py")).toBe("python")
-		expect(inferLanguage("README.md")).toBe("markdown")
-		expect(inferLanguage("unknown.custom")).toBe("plaintext")
+		expect(inferMonacoLanguageFromPath("index.ts")).toBe("typescript")
+		expect(inferMonacoLanguageFromPath("index.tsx")).toBe("typescript")
+		expect(inferMonacoLanguageFromPath("app.js")).toBe("javascript")
+		expect(inferMonacoLanguageFromPath("file.py")).toBe("python")
+		expect(inferMonacoLanguageFromPath("README.md")).toBe("markdown")
+		expect(inferMonacoLanguageFromPath("unknown.custom")).toBe("plaintext")
 	})
 })

@@ -20,7 +20,7 @@ interface DirectoryEntry {
 
 const normalizePath = (input: string) => input.replace(/\\/g, "/")
 
-export const inferLanguage = (filePath: string | null): string => {
+export const inferMonacoLanguageFromPath = (filePath: string | null): string => {
 	if (!filePath) {
 		return "plaintext"
 	}
@@ -295,7 +295,7 @@ export const WorkspaceEditorView = ({ onDone }: WorkspaceEditorViewProps) => {
 							<MonacoEditor
 								height="100%"
 								defaultLanguage="plaintext"
-								language={inferLanguage(selectedFilePath)}
+								language={inferMonacoLanguageFromPath(selectedFilePath)}
 								value={editedFileContent}
 								onChange={(value) => setEditedFileContent(value ?? "")}
 								theme="vs-dark"
