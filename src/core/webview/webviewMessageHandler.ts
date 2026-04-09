@@ -1311,12 +1311,12 @@ export const webviewMessageHandler = async (
 					})
 
 				await provider.postMessageToWebview({
-						type: "directoryListing",
-						values: {
-							path: normalizedRelativePath,
-							entries: listing,
-						},
-					})
+					type: "directoryListing",
+					values: {
+						path: normalizedRelativePath,
+						entries: listing,
+					},
+				})
 			} catch (err) {
 				const errorMsg = err instanceof Error ? err.message : String(err)
 				await provider.postMessageToWebview({
@@ -1376,13 +1376,13 @@ export const webviewMessageHandler = async (
 				break
 			}
 
-				if (contentToSave === undefined) {
-					await provider.postMessageToWebview({
-						type: "fileSaveResult",
-						values: { path: normalizeRelativePath(relPath), success: false, error: "No file content provided" },
-					})
-					break
-				}
+			if (contentToSave === undefined) {
+				await provider.postMessageToWebview({
+					type: "fileSaveResult",
+					values: { path: normalizeRelativePath(relPath), success: false, error: "No file content provided" },
+				})
+				break
+			}
 
 			try {
 				const cwd = getCurrentCwd()
