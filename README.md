@@ -41,7 +41,7 @@
 - [简体中文](locales/zh-CN/README.md)
 - [繁體中文](locales/zh-TW/README.md)
 - ...
-  </details>
+    </details>
 
 ---
 
@@ -153,6 +153,21 @@ If you prefer to install the VSIX package manually:
     ```sh
     code --install-extension bin/roo-cline-<version>.vsix
     ```
+
+### Standalone Runtime (Experimental)
+
+You can run Roo Code without VS Code using the standalone local backend + embedded web UI flow:
+
+```sh
+pnpm standalone:build
+pnpm --filter @roo-code/standalone start
+```
+
+Then open:
+
+```text
+http://localhost:4178/?standalone=1
+```
 
 ---
 

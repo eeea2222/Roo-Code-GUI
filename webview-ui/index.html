@@ -4,6 +4,51 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Roo Code</title>
+		<script>
+			;(function () {
+				const params = new URLSearchParams(window.location.search)
+				const standaloneEnabled =
+					params.get("standalone") === "1" || window.__ROO_STANDALONE__ === true
+				if (!standaloneEnabled) return
+
+				const apiOrigin = params.get("api") || window.location.origin
+				const stateKey = "rooStandaloneState"
+
+				const postMessage = async (message) => {
+					await fetch(`${apiOrigin}/api/message`, {
+						method: "POST",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify(message),
+					})
+				}
+
+				const getState = () => {
+					try {
+						const raw = localStorage.getItem(stateKey)
+						return raw ? JSON.parse(raw) : undefined
+					} catch (_error) {
+						return undefined
+					}
+				}
+
+				const setState = (newState) => {
+					localStorage.setItem(stateKey, JSON.stringify(newState))
+					return newState
+				}
+
+				const eventSource = new EventSource(`${apiOrigin}/api/events`)
+				eventSource.onmessage = (event) => {
+					try {
+						const data = JSON.parse(event.data)
+						window.postMessage(data, window.location.origin)
+					} catch (_error) {
+						// no-op
+					}
+				}
+
+				window.__rooStandaloneBridge = { postMessage, getState, setState, eventSource }
+			})()
+		</script>
 	</head>
 	<body>
 		<div id="root"></div>

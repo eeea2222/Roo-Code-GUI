@@ -2,6 +2,16 @@ import type { WebviewApi } from "vscode-webview"
 
 import { WebviewMessage } from "@roo/WebviewMessage"
 
+declare global {
+	interface Window {
+		__rooStandaloneBridge?: {
+			postMessage: (message: WebviewMessage) => Promise<void> | void
+			getState: () => unknown | undefined
+			setState: <T extends unknown | undefined>(newState: T) => T
+		}
+	}
+}
+
 /**
  * A utility wrapper around the acquireVsCodeApi() function, which enables
  * message passing and state management between the webview and extension
@@ -13,6 +23,7 @@ import { WebviewMessage } from "@roo/WebviewMessage"
  */
 class VSCodeAPIWrapper {
 	private readonly vsCodeApi: WebviewApi<unknown> | undefined
+	private readonly standaloneBridge = window.__rooStandaloneBridge
 
 	constructor() {
 		// Check if the acquireVsCodeApi function exists in the current development
@@ -33,6 +44,8 @@ class VSCodeAPIWrapper {
 	public postMessage(message: WebviewMessage) {
 		if (this.vsCodeApi) {
 			this.vsCodeApi.postMessage(message)
+		} else if (this.standaloneBridge) {
+			void this.standaloneBridge.postMessage(message)
 		} else {
 			console.log(message)
 		}
@@ -49,6 +62,8 @@ class VSCodeAPIWrapper {
 	public getState(): unknown | undefined {
 		if (this.vsCodeApi) {
 			return this.vsCodeApi.getState()
+		} else if (this.standaloneBridge) {
+			return this.standaloneBridge.getState()
 		} else {
 			const state = localStorage.getItem("vscodeState")
 			return state ? JSON.parse(state) : undefined
@@ -69,6 +84,8 @@ class VSCodeAPIWrapper {
 	public setState<T extends unknown | undefined>(newState: T): T {
 		if (this.vsCodeApi) {
 			return this.vsCodeApi.setState(newState)
+		} else if (this.standaloneBridge) {
+			return this.standaloneBridge.setState(newState)
 		} else {
 			localStorage.setItem("vscodeState", JSON.stringify(newState))
 			return newState
