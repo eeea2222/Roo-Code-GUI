@@ -45,6 +45,9 @@
 						// no-op
 					}
 				}
+				eventSource.onerror = () => {
+					console.warn("[roo-standalone] EventSource disconnected; browser will retry automatically")
+				}
 
 				window.__rooStandaloneBridge = { postMessage, getState, setState, eventSource }
 			})()

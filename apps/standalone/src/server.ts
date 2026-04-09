@@ -43,8 +43,16 @@ const sendSse = (message: ExtensionMessage) => {
 	}
 }
 
+const isExtensionMessage = (value: unknown): value is ExtensionMessage => {
+	return !!value && typeof value === "object" && "type" in value
+}
+
 host.on("extensionMessage", (message) => sendSse(message))
-host.on("extensionWebviewMessage", (message) => sendSse(message as ExtensionMessage))
+host.on("extensionWebviewMessage", (message) => {
+	if (isExtensionMessage(message)) {
+		sendSse(message)
+	}
+})
 
 const getContentType = (filePath: string): string => {
 	if (filePath.endsWith(".html")) return "text/html; charset=utf-8"

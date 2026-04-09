@@ -43,6 +43,8 @@ export class StandaloneExtensionHost extends EventEmitter {
 		;(global as Record<string, unknown>).__extensionHost = this
 
 		const originalResolve = Module._resolveFilename
+		// This mirrors the existing CLI host strategy and ensures any extension import of
+		// "vscode" resolves to the shim during standalone runtime activation.
 		Module._resolveFilename = function (request: string, parent: unknown, isMain: boolean, options: unknown) {
 			if (request === "vscode") {
 				return "vscode-mock"
