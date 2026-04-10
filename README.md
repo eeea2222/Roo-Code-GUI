@@ -9,7 +9,7 @@
   <em>Get help fast → <a href="https://discord.gg/roocode">Join Discord</a> • Prefer async? → <a href="https://www.reddit.com/r/RooCode/">Join r/RooCode</a></em>
 </p>
 
-# Roo Code With GUI
+# Roo Code With Standalone GUI
 
 > Your AI-Powered Dev Team, Right in Your Editor
 
