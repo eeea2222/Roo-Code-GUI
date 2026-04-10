@@ -18,6 +18,10 @@
 - Add Poe as an AI provider so you can access Poe models directly in Roo Code.
 - Improve the xAI provider with a Responses API migration, reusable transform utilities, and updated Grok-4.20 defaults.
 - Fix MiniMax model listings and context window handling for more reliable setup.
+ 
+## What's New in the fork
+
+- add standalone GUI with vibe coding
 
 <details>
   <summary>🌐 Available languages</summary>
