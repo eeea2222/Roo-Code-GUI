@@ -83,9 +83,10 @@ export const AutoApproveSettings = ({
 
 	const handleAddCommand = () => {
 		const currentCommands = allowedCommands ?? []
+		const normalizedCommand = commandInput.trim()
 
-		if (commandInput && !currentCommands.includes(commandInput)) {
-			const newCommands = [...currentCommands, commandInput]
+		if (normalizedCommand && !currentCommands.includes(normalizedCommand)) {
+			const newCommands = [...currentCommands, normalizedCommand]
 			setCachedStateField("allowedCommands", newCommands)
 			setCommandInput("")
 			vscode.postMessage({ type: "updateSettings", updatedSettings: { allowedCommands: newCommands } })
@@ -94,9 +95,10 @@ export const AutoApproveSettings = ({
 
 	const handleAddDeniedCommand = () => {
 		const currentCommands = deniedCommands ?? []
+		const normalizedCommand = deniedCommandInput.trim()
 
-		if (deniedCommandInput && !currentCommands.includes(deniedCommandInput)) {
-			const newCommands = [...currentCommands, deniedCommandInput]
+		if (normalizedCommand && !currentCommands.includes(normalizedCommand)) {
+			const newCommands = [...currentCommands, normalizedCommand]
 			setCachedStateField("deniedCommands", newCommands)
 			setDeniedCommandInput("")
 			vscode.postMessage({ type: "updateSettings", updatedSettings: { deniedCommands: newCommands } })

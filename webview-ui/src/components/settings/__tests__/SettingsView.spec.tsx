@@ -713,4 +713,33 @@ describe("SettingsView - Duplicate Commands", () => {
 			}),
 		)
 	})
+
+	it("trims whitespace before adding allowed commands", () => {
+		const { activateTab, getSettingsContent } = renderSettingsView()
+		activateTab("autoApprove")
+
+		const content = getSettingsContent()
+		fireEvent.click(within(content).getByTestId("always-allow-execute-toggle"))
+
+		const input = within(content).getByTestId("command-input")
+		fireEvent.change(input, { target: { value: "   npm test   " } })
+		fireEvent.click(within(content).getByTestId("add-command-button"))
+
+		expect(within(content).getByText("npm test")).toBeInTheDocument()
+		expect(within(content).queryByText("   npm test   ")).not.toBeInTheDocument()
+	})
+
+	it("ignores denied commands that are only whitespace", () => {
+		const { activateTab, getSettingsContent } = renderSettingsView()
+		activateTab("autoApprove")
+
+		const content = getSettingsContent()
+		fireEvent.click(within(content).getByTestId("always-allow-execute-toggle"))
+
+		const deniedInput = within(content).getByTestId("denied-command-input")
+		fireEvent.change(deniedInput, { target: { value: "   " } })
+		fireEvent.click(within(content).getByTestId("add-denied-command-button"))
+
+		expect(within(content).queryByTestId("remove-denied-command-0")).not.toBeInTheDocument()
+	})
 })
